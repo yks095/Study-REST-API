@@ -2,17 +2,22 @@ package kiseok.demoinflearnrestapi.events;
 
 import kiseok.demoinflearnrestapi.common.ErrorsResource;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.PagedResources;
+import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.Optional;
+
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
 @Controller
@@ -27,6 +32,27 @@ public class EventController {
         this.eventRepository = eventRepository;
         this.modelMapper = modelMapper;
         this.eventValidator = eventValidator;
+    }
+
+    @GetMapping
+    public ResponseEntity queryEvents(Pageable pageable, PagedResourcesAssembler<Event> assembler)    {
+        Page<Event> page = this.eventRepository.findAll(pageable);
+        PagedResources<Resource<Event>> resources = assembler.toResource(page, e -> new EventResource(e));
+        resources.add(new Link("/docs/index.html#resources-events-list").withRel("profile"));
+        return ResponseEntity.ok(resources);
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity getEvent(@PathVariable Integer id)    {
+        Optional<Event> optionalEvent = this.eventRepository.findById(id);
+
+        if(!optionalEvent.isPresent())
+            return ResponseEntity.notFound().build();
+
+        Event event = optionalEvent.get();
+        EventResource eventResource = new EventResource(event);
+        eventResource.add(new Link("/docs/index.html#resources-events-get").withRel("profile"));
+        return ResponseEntity.ok(eventResource);
     }
 
     @PostMapping
