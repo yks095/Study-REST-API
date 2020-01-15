@@ -1,5 +1,6 @@
 package kiseok.demoinflearnrestapi.events;
 
+import kiseok.demoinflearnrestapi.accounts.Account;
 import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -23,8 +24,12 @@ public class Event {
     private int limitOfEnrollment;
     private boolean offline;
     private boolean free;
+
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
+
+    @ManyToOne
+    private Account manager;
 
     public void update() {
         // Update Free
