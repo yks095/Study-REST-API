@@ -42,7 +42,7 @@ public class AccountServiceTest {
                 .password(password)
                 .roles(Collections.singleton(AccountRole.USER))
                 .build();
-        this.accountService.saveAcoount(account);
+        this.accountService.saveAccount(account);
 
         // When
         UserDetailsService userDetailsService = accountService;

@@ -3,6 +3,7 @@ package kiseok.demoinflearnrestapi.configs;
 import kiseok.demoinflearnrestapi.accounts.Account;
 import kiseok.demoinflearnrestapi.accounts.AccountRole;
 import kiseok.demoinflearnrestapi.accounts.AccountService;
+import kiseok.demoinflearnrestapi.common.AppProperties;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -34,15 +35,17 @@ public class AppConfig {
             @Autowired
             AccountService accountService;
 
+            @Autowired
+            AppProperties appProperties;
+
             @Override
             public void run(ApplicationArguments args) throws Exception {
                 Account account = Account.builder()
-                        .email("kiseok@email.com")
-                        .password("kiseok")
+                        .email(appProperties.getUsername())
+                        .password(appProperties.getPassword())
                         .roles(Collections.singleton(AccountRole.USER))
                         .build();
-
-                accountService.saveAcoount(account);
+                this.accountService.saveAccount(account);
             }
         };
     }
