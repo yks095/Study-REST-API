@@ -27,7 +27,6 @@ public class EventValidator {
             errors.rejectValue("beginEnrollmentDateTime", "wrongValue", "beginEnrollmentDateTime is wrong.");
         }
 
-
         // TODO BeginEventDateTime
         LocalDateTime beginEventDateTime = eventDto.getBeginEventDateTime();
         if(beginEventDateTime.isBefore(eventDto.getBeginEnrollmentDateTime()) ||

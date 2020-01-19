@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.util.Collections;
 
 @Configuration
@@ -40,12 +39,19 @@ public class AppConfig {
 
             @Override
             public void run(ApplicationArguments args) throws Exception {
-                Account account = Account.builder()
-                        .email(appProperties.getUsername())
-                        .password(appProperties.getPassword())
+                Account admin = Account.builder()
+                        .email(appProperties.getAdminUsername())
+                        .password(appProperties.getAdminPassword())
+                        .roles(Collections.singleton(AccountRole.ADMIN))
+                        .build();
+                this.accountService.saveAccount(admin);
+
+                Account user = Account.builder()
+                        .email(appProperties.getUserUsername())
+                        .password(appProperties.getUserUsername())
                         .roles(Collections.singleton(AccountRole.USER))
                         .build();
-                this.accountService.saveAccount(account);
+                this.accountService.saveAccount(user);
             }
         };
     }

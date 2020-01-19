@@ -9,6 +9,7 @@ import java.io.IOException;
 
 @JsonComponent
 public class ErrorsSerializer extends JsonSerializer<Errors> {
+
     @Override
     public void serialize(Errors errors, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartArray();

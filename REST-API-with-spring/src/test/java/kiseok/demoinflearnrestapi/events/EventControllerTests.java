@@ -15,7 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.util.Jackson2JsonParser;
 import org.springframework.test.web.servlet.ResultActions;
-
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.stream.IntStream;
@@ -136,16 +135,16 @@ public class EventControllerTests extends BaseControllerTest {
 
     private String getAccessToken() throws Exception {
         Account account = Account.builder()
-                .email(appProperties.getUsername())
-                .password(appProperties.getPassword())
+                .email(appProperties.getUserUsername())
+                .password(appProperties.getUserPassword())
                 .roles(Collections.singleton(AccountRole.USER))
                 .build();
         this.accountService.saveAccount(account);
 
         ResultActions perform = this.mockMvc.perform(post("/oauth/token")
                 .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))    // basicAuth 라는 헤더를 만듦
-                .param("username", appProperties.getUsername())
-                .param("password", appProperties.getPassword())
+                .param("username", appProperties.getUserUsername())
+                .param("password", appProperties.getUserPassword())
                 .param("grant_type", "password"));
 
         String responseBody = perform.andReturn().getResponse().getContentAsString();
