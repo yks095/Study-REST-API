@@ -65,7 +65,7 @@ public class EventControllerTests extends BaseControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .accept(MediaTypes.HAL_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
@@ -129,270 +129,287 @@ public class EventControllerTests extends BaseControllerTest {
         ;
     }
 
-    private String getBearerToken() throws Exception {
-        return "Bearer" + getAccessToken();
+    private String getBearerToken(boolean needToCreateAccount) throws Exception {
+        return "Bearer" + getAccessToken(needToCreateAccount);
     }
 
-    private String getAccessToken() throws Exception {
-        Account account = Account.builder()
-                .email(appProperties.getUserUsername())
-                .password(appProperties.getUserPassword())
-                .roles(Collections.singleton(AccountRole.USER))
-                .build();
-        this.accountService.saveAccount(account);
+    private String getAccessToken(boolean needToCreateAccount) throws Exception {
+        if(needToCreateAccount) {
+            createAccount();
+        }
 
-        ResultActions perform = this.mockMvc.perform(post("/oauth/token")
-                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))    // basicAuth 라는 헤더를 만듦
-                .param("username", appProperties.getUserUsername())
-                .param("password", appProperties.getUserPassword())
-                .param("grant_type", "password"));
+            ResultActions perform = this.mockMvc.perform(post("/oauth/token")
+                    .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))    // basicAuth 라는 헤더를 만듦
+                    .param("username", appProperties.getUserUsername())
+                    .param("password", appProperties.getUserPassword())
+                    .param("grant_type", "password"));
 
-        String responseBody = perform.andReturn().getResponse().getContentAsString();
-        Jackson2JsonParser parser = new Jackson2JsonParser();
+            String responseBody = perform.andReturn().getResponse().getContentAsString();
+            Jackson2JsonParser parser = new Jackson2JsonParser();
 
-        return parser.parseMap(responseBody).get("access_token").toString();
-    }
+            return parser.parseMap(responseBody).get("access_token").toString();
+        }
 
-
-    @Test
-    @TestDescription("입력 받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
-    public void createEvent_Bad_Request() throws Exception {
-        Event event = Event.builder()
-                .id(100)
-                .name("Spring")
-                .description("REST API Development With Spring")
-                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
-                .endEventDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
-                .basePrice(100)
-                .maxPrice(200)
-                .limitOfEnrollment(100)
-                .location("부산시 연제구")
-                .free(true)
-                .offline(false)
-                .eventStatus(EventStatus.PUBLISHED)
-                .build();
-
-        mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaTypes.HAL_JSON)
-                .content(objectMapper.writeValueAsString(event)))
-                .andDo(print())
-                .andExpect(status().isBadRequest());
-    }
+        private Account createAccount() {
+            Account account = Account.builder()
+                    .email(appProperties.getUserUsername())
+                    .password(appProperties.getUserPassword())
+                    .roles(Collections.singleton(AccountRole.USER))
+                    .build();
+            return this.accountService.saveAccount(account);
+        }
 
 
-    @Test
-    @TestDescription("입력 값이 비어있는 경우에 에러가 발생하는 테스트")
-    public void createEvent_Bad_Request_Empty_Input() throws Exception {
-        EventDto eventDto = EventDto.builder().build();
+        @Test
+        @TestDescription("입력 받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
+        public void createEvent_Bad_Request() throws Exception {
+            Event event = Event.builder()
+                    .id(100)
+                    .name("Spring")
+                    .description("REST API Development With Spring")
+                    .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
+                    .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
+                    .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
+                    .endEventDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
+                    .basePrice(100)
+                    .maxPrice(200)
+                    .limitOfEnrollment(100)
+                    .location("부산시 연제구")
+                    .free(true)
+                    .offline(false)
+                    .eventStatus(EventStatus.PUBLISHED)
+                    .build();
 
-        mockMvc.perform(post("/api/events")
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @TestDescription("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
-    public void createEvent_Bad_Request_Wrong_Input() throws Exception {
-        EventDto eventDto = EventDto.builder()
-                .name("Spring")
-                .description("REST API Development With Spring")
-                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
-                .endEventDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
-                .basePrice(10000)
-                .maxPrice(200)
-                .limitOfEnrollment(100)
-                .location("부산시 연제구")
-                .build();
-
-        mockMvc.perform(post("/api/events")
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(jsonPath("content[0].objectName").exists())
-                .andExpect(jsonPath("content[0].defaultMessage").exists())
-                .andExpect(jsonPath("content[0].code").exists())
-                .andExpect(jsonPath("_links.index").exists())
-        ;
-
-    }
-
-    @Test
-    @TestDescription("30개의 이벤트를 10개씩 2번째 페이지 조회하기")
-    public void queryEvents() throws Exception  {
-        // Givne
-        IntStream.range(0, 30).forEach(this::generateEvent);
-
-        // When & Then
-        this.mockMvc.perform(get("/api/events")
-                .param("page", "1")
-                .param("size", "10")
-                .param("sort", "name,DESC"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("page").exists())
-                .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
-                .andExpect(jsonPath("_links.self").exists())
-                .andExpect(jsonPath("_links.profile").exists())
-                .andDo(document("query-events"))
-        ;
-    }
-
-    @Test
-    @TestDescription("30개의 이벤트를 10개씩 2번째 페이지 조회하기")
-    public void queryEventsWithAuthentication() throws Exception  {
-        // Given
-        IntStream.range(0, 30).forEach(this::generateEvent);
-
-        // When & Then
-        this.mockMvc.perform(get("/api/events")
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .param("page", "1")
-                        .param("size", "10")
-                        .param("sort", "name,DESC"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("page").exists())
-                .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
-                .andExpect(jsonPath("_links.self").exists())
-                .andExpect(jsonPath("_links.profile").exists())
-                .andExpect(jsonPath("_links.create-event").exists())
-                .andDo(document("query-events"))
-        ;
-    }
-
-    @Test
-    @TestDescription("기존의 이벤트를 하나 조회하기")
-    public void getEvent() throws Exception {
-        //Given
-        Event event = this.generateEvent(100);
-
-        // When & Then
-        this.mockMvc.perform(get("/api/events/{id}", event.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("name").exists())
-                .andExpect(jsonPath("id").exists())
-                .andExpect(jsonPath("_links.self").exists())
-                .andExpect(jsonPath("_links.profile").exists())
-                .andDo(document("get-an-event"))
-        ;
-    }
-
-    @Test
-    @TestDescription("이벤트를 정상적으로 수정하기")
-    public void updateEvent() throws Exception  {
-        // Given
-        Event event = this.generateEvent(200);
-
-        String eventName = "Updated Event";
-        EventDto eventDto = this.modelMapper.map(event, EventDto.class);
-        eventDto.setName(eventName);
-
-        //When & Then
-        this.mockMvc.perform(put("/api/events/{id}", event.getId())
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("name").value(eventName))
-                .andExpect(jsonPath("_links.self").exists())
-                .andDo(document("update-event"))
-        ;
-    }
-
-    @Test
-    @TestDescription("입력값이 비어있는 경우에 이벤트 수정 실패")
-    public void updateEvent400_Empty() throws Exception  {
-        // Given
-        Event event = this.generateEvent(200);
-
-        EventDto eventDto = new EventDto();
-
-        //When & Then
-        this.mockMvc.perform(put("/api/events/{id}", event.getId())
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-        ;
-    }
-
-    @Test
-    @TestDescription("입력값이 잘못된 경우에 이벤트 수정 실패")
-    public void updateEvent400_Wrong() throws Exception  {
-        // Given
-        Event event = this.generateEvent(200);
-
-        EventDto eventDto = new EventDto();
-        eventDto.setBasePrice(20000);
-        eventDto.setMaxPrice(1000);
-
-        //When & Then
-        this.mockMvc.perform(put("/api/events/{id}", event.getId())
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(status().isBadRequest())
-        ;
-    }
-
-    @Test
-    @TestDescription("존재하지 않는 이벤트 수정 실패")
-    public void updateEvent404() throws Exception  {
-        // Given
-        Event event = this.generateEvent(200);
-
-        EventDto eventDto = this.modelMapper.map(event, EventDto.class);
-
-        //When & Then
-        this.mockMvc.perform(put("/api/events/12345")
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .content(this.objectMapper.writeValueAsString(eventDto)))
-                .andDo(print())
-                .andExpect(status().isNotFound())
-        ;
-    }
-
-    @Test
-    @TestDescription("없는 이벤트를 조회했을 때 404 응답 받기")
-    public void getEvent404() throws Exception {
-        // When & Then
-        this.mockMvc.perform(get("/api/events/12345"))
-                .andExpect(status().isNotFound())
-        ;
-    }
+            mockMvc.perform(post("/api/events/")
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaTypes.HAL_JSON)
+                    .content(objectMapper.writeValueAsString(event)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest());
+        }
 
 
-    private Event generateEvent(int i) {
-        Event event = Event.builder()
-                .name("event" + i)
-                .description("REST API Development With Spring")
-                .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
-                .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
-                .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
-                .endEventDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
-                .basePrice(100)
-                .maxPrice(200)
-                .limitOfEnrollment(100)
-                .location("부산시 연제구")
-                .free(false)
-                .offline(true)
-                .eventStatus(EventStatus.DRAFT)
-                .build();
+        @Test
+        @TestDescription("입력 값이 비어있는 경우에 에러가 발생하는 테스트")
+        public void createEvent_Bad_Request_Empty_Input() throws Exception {
+            EventDto eventDto = EventDto.builder().build();
 
-        return this.eventRepository.save(event);
+            mockMvc.perform(post("/api/events")
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @TestDescription("입력 값이 잘못된 경우에 에러가 발생하는 테스트")
+        public void createEvent_Bad_Request_Wrong_Input() throws Exception {
+            EventDto eventDto = EventDto.builder()
+                    .name("Spring")
+                    .description("REST API Development With Spring")
+                    .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
+                    .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
+                    .beginEventDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
+                    .endEventDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
+                    .basePrice(10000)
+                    .maxPrice(200)
+                    .limitOfEnrollment(100)
+                    .location("부산시 연제구")
+                    .build();
+
+            mockMvc.perform(post("/api/events")
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andDo(print())
+                    .andExpect(jsonPath("content[0].objectName").exists())
+                    .andExpect(jsonPath("content[0].defaultMessage").exists())
+                    .andExpect(jsonPath("content[0].code").exists())
+                    .andExpect(jsonPath("_links.index").exists())
+            ;
+
+        }
+
+        @Test
+        @TestDescription("30개의 이벤트를 10개씩 2번째 페이지 조회하기")
+        public void queryEvents() throws Exception  {
+            // Givne
+            IntStream.range(0, 30).forEach(this::generateEvent);
+
+            // When & Then
+            this.mockMvc.perform(get("/api/events")
+                    .param("page", "1")
+                    .param("size", "10")
+                    .param("sort", "name,DESC"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("page").exists())
+                    .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
+                    .andExpect(jsonPath("_links.self").exists())
+                    .andExpect(jsonPath("_links.profile").exists())
+                    .andDo(document("query-events"))
+            ;
+        }
+
+        @Test
+        @TestDescription("30개의 이벤트를 10개씩 2번째 페이지 조회하기")
+        public void queryEventsWithAuthentication() throws Exception  {
+            // Given
+            IntStream.range(0, 30).forEach(this::generateEvent);
+
+            // When & Then
+            this.mockMvc.perform(get("/api/events")
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .param("page", "1")
+                    .param("size", "10")
+                    .param("sort", "name,DESC"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("page").exists())
+                    .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
+                    .andExpect(jsonPath("_links.self").exists())
+                    .andExpect(jsonPath("_links.profile").exists())
+                    .andExpect(jsonPath("_links.create-event").exists())
+                    .andDo(document("query-events"))
+            ;
+        }
+
+        @Test
+        @TestDescription("기존의 이벤트를 하나 조회하기")
+        public void getEvent() throws Exception {
+            //Given
+            Account account = this.createAccount();
+            Event event = this.generateEvent(100, account);
+
+            // When & Then
+            this.mockMvc.perform(get("/api/events/{id}", event.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("name").exists())
+                    .andExpect(jsonPath("id").exists())
+                    .andExpect(jsonPath("_links.self").exists())
+                    .andExpect(jsonPath("_links.profile").exists())
+                    .andDo(document("get-an-event"))
+            ;
+        }
+
+        @Test
+        @TestDescription("이벤트를 정상적으로 수정하기")
+        public void updateEvent() throws Exception  {
+            // Given
+            Account account = this.createAccount();
+            Event event = this.generateEvent(200, account);
+
+            String eventName = "Updated Event";
+            EventDto eventDto = this.modelMapper.map(event, EventDto.class);
+            eventDto.setName(eventName);
+
+            //When & Then
+            this.mockMvc.perform(put("/api/events/{id}", event.getId())
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("name").value(eventName))
+                    .andExpect(jsonPath("_links.self").exists())
+                    .andDo(document("update-event"))
+            ;
+        }
+
+        @Test
+        @TestDescription("입력값이 비어있는 경우에 이벤트 수정 실패")
+        public void updateEvent400_Empty() throws Exception  {
+            // Given
+            Event event = this.generateEvent(200);
+
+            EventDto eventDto = new EventDto();
+
+            //When & Then
+            this.mockMvc.perform(put("/api/events/{id}", event.getId())
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest())
+            ;
+        }
+
+        @Test
+        @TestDescription("입력값이 잘못된 경우에 이벤트 수정 실패")
+        public void updateEvent400_Wrong() throws Exception  {
+            // Given
+            Event event = this.generateEvent(200);
+
+            EventDto eventDto = new EventDto();
+            eventDto.setBasePrice(20000);
+            eventDto.setMaxPrice(1000);
+
+            //When & Then
+            this.mockMvc.perform(put("/api/events/{id}", event.getId())
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andDo(print())
+                    .andExpect(status().isBadRequest())
+            ;
+        }
+
+        @Test
+        @TestDescription("존재하지 않는 이벤트 수정 실패")
+        public void updateEvent404() throws Exception  {
+            // Given
+            Event event = this.generateEvent(200);
+
+            EventDto eventDto = this.modelMapper.map(event, EventDto.class);
+
+            //When & Then
+            this.mockMvc.perform(put("/api/events/12345")
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(this.objectMapper.writeValueAsString(eventDto)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound())
+            ;
+        }
+
+        @Test
+        @TestDescription("없는 이벤트를 조회했을 때 404 응답 받기")
+        public void getEvent404() throws Exception {
+            // When & Then
+            this.mockMvc.perform(get("/api/events/12345"))
+                    .andExpect(status().isNotFound())
+            ;
+        }
+
+        private Event generateEvent(int i, Account account) {
+            Event event = buildEvent(i);
+            event.setManager(account);
+            return this.eventRepository.save(event);
+        }
+
+
+        private Event generateEvent(int i) {
+            Event event = buildEvent(i);
+            return this.eventRepository.save(event);
+        }
+
+    private Event buildEvent(int i) {
+        return Event.builder()
+                        .name("event" + i)
+                        .description("REST API Development With Spring")
+                        .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
+                        .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
+                        .beginEventDateTime(LocalDateTime.of(2018, 11, 25, 14, 21))
+                        .endEventDateTime(LocalDateTime.of(2018, 11, 26, 14, 21))
+                        .basePrice(100)
+                        .maxPrice(200)
+                        .limitOfEnrollment(100)
+                        .location("부산시 연제구")
+                        .free(false)
+                        .offline(true)
+                        .eventStatus(EventStatus.DRAFT)
+                        .build();
     }
 
 }
