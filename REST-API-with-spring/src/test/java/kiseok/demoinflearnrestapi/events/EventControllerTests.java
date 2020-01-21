@@ -249,7 +249,7 @@ public class EventControllerTests extends BaseControllerTest {
     @Test
     @TestDescription("30개의 이벤트를 10개씩 2번째 페이지 조회하기")
     public void queryEventsWithAuthentication() throws Exception  {
-        // Givne
+        // Given
         IntStream.range(0, 30).forEach(this::generateEvent);
 
         // When & Then
