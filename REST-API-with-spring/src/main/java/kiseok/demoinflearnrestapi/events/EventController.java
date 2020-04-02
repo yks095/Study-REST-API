@@ -87,6 +87,7 @@ public class EventController {
         event.update();
         event.setManager(currentUser);
         Event newEvent = eventRepository.save(event);
+
         ControllerLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(newEvent.getId());
         URI createdUri = selfLinkBuilder.toUri();
         EventResource eventResource = new EventResource(event);
