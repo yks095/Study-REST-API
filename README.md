@@ -11,8 +11,8 @@ Inflearn에 있는 백기선님의 [스프링 기반 REST API 개발](https://ww
 ## 개발환경
 |도구|버전|
 |:---:|:---:|
-|Spring|Spring Boot 2.1.0|
-|운영체제|Windows 10 Home|
+|Spring|Spring Boot 2.2.5|
+|운영체제|Windows 10 Pro|
 |개발 툴|IntelliJ IDEA Ultimate|
 |JDK|JDK 8(>=8)|
 |빌드 툴|Maven 4.0.0|
